@@ -1,13 +1,11 @@
 # k8s readiness-probe termination regression repro
 
 Minimal reproduction of a kubelet behavior change where an **exec readiness
-probe stops executing once a pod begins termination** — it no longer runs, so
-the pod's `Ready` condition is not correctly updated during the graceful-termination
-window.
+probe stops executing once a pod begins termination**. 
+The exec command is no longer ran, 
+so the pod's `Ready` condition is not correctly updated during the graceful-termination window.
 
-Suspected cause: [kubernetes/kubernetes#130487](https://github.com/kubernetes/kubernetes/pull/130487).
-
-- **Good:** Kubernetes **v1.33** / **v1.34** — probe keeps running; `Ready` flips to `False` when the probe starts failing.
+- **Good:** Kubernetes **v1.33** / **v1.34** / **v1.36** — probe keeps running; `Ready` flips to `False` when the probe starts failing.
 - **Bad:** Kubernetes **v1.35** — the probe is not run during termination, so `Ready` is not updated and stays `True`.
 
 Controllers that route traffic on `Ready` status e.g., Cilium's `LocalRedirectPolicy`, keep sending traffic to a terminating pod.
@@ -64,7 +62,7 @@ Stop the watch with Ctrl-C, then:
 
 ```bash
 # 5. check the probe events
-# Readiness probe failed is good, that is wanted behavior pre-1.35
+# Readiness probe failed is good, that is wanted behavior on v1.33/v1.34/v1.36
 # Context cancelled is bad, that is 1.35 behavior
 kubectl --context kind-rpr get events --field-selector reason=Unhealthy,involvedObject.kind=Pod --sort-by=.lastTimestamp
 
@@ -72,7 +70,7 @@ kubectl --context kind-rpr get events --field-selector reason=Unhealthy,involved
 kind delete cluster --name rpr
 ```
 
-On v1.33/v1.34 the terminating pod's `Ready` flips to `False` a few seconds after
+On v1.33/v1.34/v1.36 the terminating pod's `Ready` flips to `False` a few seconds after
 termination begins; on v1.35 the probe is not run, so `Ready` is not updated.
 
 ## Workload
@@ -87,7 +85,7 @@ This is a common strategy for apps that cannot support an http-based probe.
 Watching the pod as it terminates, we see different behavior of Ready status:
 
 ```
-# v1.33 / v1.34 (good) -- READY flips to 0/1 a few seconds after termination begins
+# v1.33 / v1.34 / v1.36 (good) -- READY flips to 0/1 a few seconds after termination begins
 readiness-demo-aaa   1/1     Running   0     5s
 readiness-demo-aaa   0/1     Running   0     8s
 (pod deleted)
@@ -101,7 +99,7 @@ readiness-demo-aaa   1/1     Running   0     60s
 The probe events differ between versions (be sure to scroll for entire message):
 
 ```
-# v1.33 / v1.34 (good)
+# v1.33 / v1.34 / v1.36 (good)
 50s         Warning   Unhealthy   pod/readiness-demo-544bc44664-gpdgz   Readiness probe failed:
 
 # v1.35 (bad)
