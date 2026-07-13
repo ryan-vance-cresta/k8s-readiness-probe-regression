@@ -76,9 +76,10 @@ termination begins; on v1.35 the probe is not run, so `Ready` is not updated.
 
 ## Workload
 
-A single-replica Deployment whose exec readiness probe is `test ! -f /tmp/shutdown`
-(Ready while the marker is absent) and whose `preStop` does `echo "" > /tmp/shutdown`
-then sleeps — so during termination the probe *would* fail if still executed.
+A single-replica Deployment whose readiness probe is a custom exec.
+On termination preStop, a file is created within the pod.
+The readiness probe uses exec to check for the existence of the file, to determine if app is shutting down.
+This is a common strategy for apps that cannot support an http-based probe.
 
 ## Expected output
 
