@@ -98,7 +98,7 @@ readiness-demo-aaa   1/1     Running   0     60s
 (pod deleted)
 ```
 
-The probe events differ between versions:
+The probe events differ between versions (be sure to scroll for entire message):
 
 ```
 # v1.33 / v1.34 (good)
