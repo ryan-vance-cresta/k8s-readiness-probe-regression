@@ -25,6 +25,7 @@ a different `kind/cluster-v*.yaml`:
 
 ```bash
 # 1. create a cluster for the version you want to test
+# Use one of the cluster configs under kind/
 kind create cluster --config kind/cluster-v1.35.yaml --name rpr
 
 # 2. deploy the workload (apply returns immediately), then wait for Ready
@@ -83,9 +84,7 @@ This is a common strategy for apps that cannot support an http-based probe.
 
 ## Expected output
 
-Watching with `kubectl get pods -l app=readiness-demo -w` (the `READY` column is
-`containers-ready/total`; `0/1` means `Ready=False`). Focus on the terminating
-pod's row:
+Watching the pod as it terminates, we see different behavior of Ready status:
 
 ```
 # v1.33 / v1.34 (good) -- READY flips to 0/1 a few seconds after termination begins
@@ -99,8 +98,7 @@ readiness-demo-aaa   1/1     Running   0     60s
 (pod deleted)
 ```
 
-The probe events (`kubectl get events --field-selector reason=Unhealthy,involvedObject.kind=Pod`)
-differ between versions:
+The probe events differ between versions:
 
 ```
 # v1.33 / v1.34 (good)
