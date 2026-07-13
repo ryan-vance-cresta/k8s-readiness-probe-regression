@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: readiness-demo
+  labels:
+    app: readiness-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: readiness-demo
+  template:
+    metadata:
+      labels:
+        app: readiness-demo
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: app
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "app ready; sleeping"
+              sleep 3600
+          readinessProbe:
+            exec:
+              # Ready while the shutdown marker is absent
+              # fails once preStop creates it
+              command:
+              - sh
+              - -c
+              - test ! -f /tmp/shutdown
+            initialDelaySeconds: 5
+            periodSeconds: 2
+            failureThreshold: 1
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - sh
+                - -c
+                - |
+                  # Create shutdown marker to fail readiness probe
+                  echo "" > /tmp/shutdown
+                  # Hold the container open to watch the Ready condition during termination
+                  sleep 30
